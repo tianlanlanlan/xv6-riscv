@@ -36,14 +36,12 @@ struct {
 void
 binit(void)
 {
-  struct buf *b;
-
   initlock(&bcache.lock, "bcache");
 
   // Create linked list of buffers
   bcache.head.prev = &bcache.head;
   bcache.head.next = &bcache.head;
-  for(b = bcache.buf; b < bcache.buf+NBUF; b++){
+  for (struct buf *b = bcache.buf; b < &bcache.buf[NBUF]; b++) {
     b->next = bcache.head.next;
     b->prev = &bcache.head;
     initsleeplock(&b->lock, "buffer");

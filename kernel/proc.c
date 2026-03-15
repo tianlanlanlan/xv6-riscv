@@ -15,7 +15,7 @@ struct proc *initproc;
 int nextpid = 1;
 struct spinlock pid_lock;
 
-extern void forkret(void);
+static void forkret(void);
 static void freeproc(struct proc *p);
 
 extern char trampoline[]; // trampoline.S
@@ -133,7 +133,7 @@ found:
   }
 
   // An empty user page table.
-  p->pagetable = proc_pagetable(p);
+  p->pagetable = alloc_proc_pagetable(p->trapframe);
   if(p->pagetable == 0){
     freeproc(p);
     release(&p->lock);
@@ -174,7 +174,7 @@ freeproc(struct proc *p)
 // Create a user page table for a given process, with no user memory,
 // but with trampoline and trapframe pages.
 pagetable_t
-proc_pagetable(struct proc *p)
+alloc_proc_pagetable(struct trapframe *trapframe)
 {
   pagetable_t pagetable;
 
@@ -196,7 +196,7 @@ proc_pagetable(struct proc *p)
   // map the trapframe page just below the trampoline page, for
   // trampoline.S.
   if(mappages(pagetable, TRAPFRAME, PGSIZE,
-              (uint64)(p->trapframe), PTE_R | PTE_W) < 0){
+              (uint64)(trapframe), PTE_R | PTE_W) < 0){
     uvmunmap(pagetable, TRAMPOLINE, 1, 0);
     uvmfree(pagetable, 0);
     return 0;
@@ -219,16 +219,13 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
 void
 userinit(void)
 {
-  struct proc *p;
-
-  p = allocproc();
-  initproc = p;
+  initproc = allocproc();
   
-  p->cwd = namei("/");
+  initproc->cwd = namei("/");
 
-  p->state = RUNNABLE;
+  initproc->state = RUNNABLE;
 
-  release(&p->lock);
+  release(&initproc->lock);
 }
 
 // Grow or shrink user memory by n bytes.
@@ -502,7 +499,7 @@ yield(void)
 
 // A fork child's very first scheduling by scheduler()
 // will swtch to forkret.
-void
+static void
 forkret(void)
 {
   extern char userret[];

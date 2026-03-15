@@ -8,6 +8,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+struct trapframe;
 
 // bio.c
 void            binit(void);
@@ -83,7 +84,7 @@ void            kexit(int);
 int             kfork(void);
 int             growproc(int);
 void            proc_mapstacks(pagetable_t);
-pagetable_t     proc_pagetable(struct proc *);
+pagetable_t     alloc_proc_pagetable(struct trapframe *trapframe);
 void            proc_freepagetable(pagetable_t, uint64);
 int             kkill(int);
 int             killed(struct proc*);

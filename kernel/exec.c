@@ -52,7 +52,7 @@ kexec(char *path, char **argv)
   if(elf.magic != ELF_MAGIC)
     goto bad;
 
-  if((pagetable = proc_pagetable(p)) == 0)
+  if((pagetable = alloc_proc_pagetable(p->trapframe)) == 0)
     goto bad;
 
   // Load program into memory.

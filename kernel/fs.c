@@ -28,7 +28,7 @@ struct superblock sb;
 
 // Read the super block.
 static void
-readsb(int dev, struct superblock *sb)
+readsb(int dev /* input */, struct superblock *sb /* output */)
 {
   struct buf *bp;
 
