@@ -201,12 +201,12 @@ copyinstr2(char *s)
 void
 copyinstr3(char *s)
 {
-  sbrk(8192);
-  uint64 top = (uint64) sbrk(0);
+  sbrkeager(8192);
+  uint64 top = (uint64) sbrkeager(0);
   if((top % PGSIZE) != 0){
-    sbrk(PGSIZE - (top % PGSIZE));
+    sbrkeager(PGSIZE - (top % PGSIZE));
   }
-  top = (uint64) sbrk(0);
+  top = (uint64) sbrkeager(0);
   if(top % PGSIZE){
     printf("oops\n");
     exit(1);
@@ -248,15 +248,15 @@ rwsbrk(char *s)
 {
   int fd, n;
   
-  uint64 a = (uint64) sbrk(8192);
+  uint64 a = (uint64) sbrkeager(8192);
 
   if(a == (uint64) SBRK_ERROR) {
-    printf("sbrk(rwsbrk) failed\n");
+    printf("sbrkeager(rwsbrk) failed\n");
     exit(1);
   }
   
-  if (sbrk(-8192) == SBRK_ERROR) {
-    printf("sbrk(rwsbrk) shrink failed\n");
+  if (sbrkeager(-8192) == SBRK_ERROR) {
+    printf("sbrkeager(rwsbrk) shrink failed\n");
     exit(1);
   }
 
@@ -2003,14 +2003,14 @@ sbrkbasic(char *s)
   int i, pid, xstatus;
   char *c, *a, *b;
 
-  // does sbrk() return the expected failure value?
+  // does sbrkeager() return the expected failure value?
   pid = fork();
   if(pid < 0){
     printf("fork failed in sbrkbasic\n");
     exit(1);
   }
   if(pid == 0){
-    a = sbrk(TOOMUCH);
+    a = sbrkeager(TOOMUCH);
     if(a == (char*)SBRK_ERROR){
       // it's OK if this fails.
       exit(0);
@@ -2020,7 +2020,7 @@ sbrkbasic(char *s)
       *b = 99;
     }
     
-    // we should not get here! either sbrk(TOOMUCH)
+    // we should not get here! either sbrkeager(TOOMUCH)
     // should have failed, or (with lazy allocation)
     // a pagefault should have killed this process.
     exit(1);
@@ -2032,10 +2032,10 @@ sbrkbasic(char *s)
     exit(1);
   }
 
-  // can one sbrk() less than a page?
-  a = sbrk(0);
+  // can one sbrkeager() less than a page?
+  a = sbrkeager(0);
   for(i = 0; i < 5000; i++){
-    b = sbrk(1);
+    b = sbrkeager(1);
     if(b != a){
       printf("%s: sbrk test failed %d %p %p\n", s, i, a, b);
       exit(1);
@@ -2048,8 +2048,8 @@ sbrkbasic(char *s)
     printf("%s: sbrk test fork failed\n", s);
     exit(1);
   }
-  c = sbrk(1);
-  c = sbrk(1);
+  c = sbrkeager(1);
+  c = sbrkeager(1);
   if(c != a + 1){
     printf("%s: sbrk test failed post-fork\n", s);
     exit(1);
@@ -2067,12 +2067,12 @@ sbrkmuch(char *s)
   char *c, *oldbrk, *a, *lastaddr, *p;
   uint64 amt;
 
-  oldbrk = sbrk(0);
+  oldbrk = sbrkeager(0);
 
   // can one grow address space to something big?
-  a = sbrk(0);
+  a = sbrkeager(0);
   amt = BIG - (uint64)a;
-  p = sbrk(amt);
+  p = sbrkeager(amt);
   if (p != a) {
     printf("%s: sbrk test failed to grow big address space; enough phys mem?\n", s);
     exit(1);
@@ -2082,22 +2082,22 @@ sbrkmuch(char *s)
   *lastaddr = 99;
 
   // can one de-allocate?
-  a = sbrk(0);
-  c = sbrk(-PGSIZE);
+  a = sbrkeager(0);
+  c = sbrkeager(-PGSIZE);
   if(c == (char*)SBRK_ERROR){
     printf("%s: sbrk could not deallocate\n", s);
     exit(1);
   }
-  c = sbrk(0);
+  c = sbrkeager(0);
   if(c != a - PGSIZE){
     printf("%s: sbrk deallocation produced wrong address, a %p c %p\n", s, a, c);
     exit(1);
   }
 
   // can one re-allocate that page?
-  a = sbrk(0);
-  c = sbrk(PGSIZE);
-  if(c != a || sbrk(0) != a + PGSIZE){
+  a = sbrkeager(0);
+  c = sbrkeager(PGSIZE);
+  if(c != a || sbrkeager(0) != a + PGSIZE){
     printf("%s: sbrk re-allocation failed, a %p c %p\n", s, a, c);
     exit(1);
   }
@@ -2107,8 +2107,8 @@ sbrkmuch(char *s)
     exit(1);
   }
 
-  a = sbrk(0);
-  c = sbrk(-(sbrk(0) - oldbrk));
+  a = sbrkeager(0);
+  c = sbrkeager(-(sbrkeager(0) - oldbrk));
   if(c != a){
     printf("%s: sbrk downsize failed, a %p c %p\n", s, a, c);
     exit(1);
@@ -2185,7 +2185,7 @@ sbrkfail(char *s)
   for(i = 0; i < sizeof(pids)/sizeof(pids[0]); i++){
     if((pids[i] = fork()) == 0){
       // allocate a lot of memory
-      if (sbrk(BIG - (uint64)sbrk(0)) ==  (char*)SBRK_ERROR)
+      if (sbrkeager(BIG - (uint64)sbrkeager(0)) ==  (char*)SBRK_ERROR)
         write(fds[1], "0", 1);
       else
         write(fds[1], "1", 1);
@@ -2204,7 +2204,7 @@ sbrkfail(char *s)
   
   // if those failed allocations freed up the pages they did allocate,
   // we'll be able to allocate here
-  c = sbrk(PGSIZE);
+  c = sbrkeager(PGSIZE);
   for(i = 0; i < sizeof(pids)/sizeof(pids[0]); i++){
     if(pids[i] == -1)
       continue;
@@ -2224,7 +2224,7 @@ sbrkfail(char *s)
   }
   if(pid == 0){
     // allocate a lot of memory. this should produce an error
-    a = sbrk(10*BIG);
+    a = sbrkeager(10*BIG);
     if(a == (char*)SBRK_ERROR){
       exit(0);
     }   
@@ -2244,7 +2244,7 @@ sbrkarg(char *s)
   char *a;
   int fd, n;
 
-  a = sbrk(PGSIZE);
+  a = sbrkeager(PGSIZE);
   fd = open("sbrk", O_CREATE|O_WRONLY);
   unlink("sbrk");
   if(fd < 0)  {
@@ -2258,7 +2258,7 @@ sbrkarg(char *s)
   close(fd);
 
   // test writes to allocated memory
-  a = sbrk(PGSIZE);
+  a = sbrkeager(PGSIZE);
   if(pipe((int *) a) != 0){
     printf("%s: pipe() failed\n", s);
     exit(1);
@@ -2398,7 +2398,7 @@ void argptest(char *s)
     printf("%s: open failed\n", s);
     exit(1);
   }
-  read(fd, sbrk(0) - 1, -1);
+  read(fd, sbrkeager(0) - 1, -1);
   close(fd);
 }
 
@@ -2473,7 +2473,7 @@ pgbug(char *s)
   exit(0);
 }
 
-// regression test. does the kernel panic if a process sbrk()s its
+// regression test. does the kernel panic if a process sbrkeager()s its
 // size to be less than a page, or zero, or reduces the break by an
 // amount too small to cause a page to be freed?
 void
@@ -2485,11 +2485,11 @@ sbrkbugs(char *s)
     exit(1);
   }
   if(pid == 0){
-    int sz = (uint64) sbrk(0);
+    int sz = (uint64) sbrkeager(0);
     // free all user memory; there used to be a bug that
     // would not adjust p->sz correctly in this case,
     // causing exit() to panic.
-    sbrk(-sz);
+    sbrkeager(-sz);
     // user page fault here.
     exit(0);
   }
@@ -2501,11 +2501,11 @@ sbrkbugs(char *s)
     exit(1);
   }
   if(pid == 0){
-    int sz = (uint64) sbrk(0);
+    int sz = (uint64) sbrkeager(0);
     // set the break to somewhere in the very first
     // page; there used to be a bug that would incorrectly
     // free the first page.
-    sbrk(-(sz - 3500));
+    sbrkeager(-(sz - 3500));
     exit(0);
   }
   wait(0);
@@ -2517,12 +2517,12 @@ sbrkbugs(char *s)
   }
   if(pid == 0){
     // set the break in the middle of a page.
-    sbrk((10*PGSIZE + 2048) - (uint64)sbrk(0));
+    sbrkeager((10*PGSIZE + 2048) - (uint64)sbrkeager(0));
 
     // reduce the break a bit, but not enough to
     // cause a page to be freed. this used to cause
     // a panic.
-    sbrk(-10);
+    sbrkeager(-10);
 
     exit(0);
   }
@@ -2537,13 +2537,13 @@ sbrkbugs(char *s)
 void
 sbrklast(char *s)
 {
-  uint64 top = (uint64) sbrk(0);
+  uint64 top = (uint64) sbrkeager(0);
   if((top % PGSIZE) != 0)
-    sbrk(PGSIZE - (top % PGSIZE));
-  sbrk(PGSIZE);
-  sbrk(10);
-  sbrk(-20);
-  top = (uint64) sbrk(0);
+    sbrkeager(PGSIZE - (top % PGSIZE));
+  sbrkeager(PGSIZE);
+  sbrkeager(10);
+  sbrkeager(-20);
+  top = (uint64) sbrkeager(0);
   char *p = (char *) (top - 64);
   p[0] = 'x';
   p[1] = '\0';
@@ -2563,8 +2563,8 @@ sbrklast(char *s)
 void
 sbrk8000(char *s)
 {
-  sbrk(0x80000004);
-  volatile char *top = sbrk(0);
+  sbrkeager(0x80000004);
+  volatile char *top = sbrkeager(0);
   *(top-1) = *(top-1) + 1;
 }
 
@@ -2660,16 +2660,16 @@ lazy_copy(char *s)
 {
   // copyinstr on lazy page
   {
-    char *p = sbrk(0);
+    char *p = sbrkeager(0);
     sbrklazy(4*PGSIZE);
     open(p + 8192, 0);
   }
   
   {
-    void *xx = sbrk(0);
-    void *ret = sbrk(-(((uint64) xx)+1));
+    void *xx = sbrkeager(0);
+    void *ret = sbrkeager(-(((uint64) xx)+1));
     if(ret != xx){
-      printf("sbrk(sbrk(0)+1) returned %p, not old sz\n", ret);
+      printf("sbrkeager(sbrkeager(0)+1) returned %p, not old sz\n", ret);
       exit(1);
     }
   }
@@ -2701,8 +2701,8 @@ lazy_copy(char *s)
 void
 lazy_sbrk(char *s)
 {
-  // sbrk() takes just int, so take 2^30-sized steps towards MAXVA
-  char *p = sbrk(0);
+  // sbrkeager() takes just int, so take 2^30-sized steps towards MAXVA
+  char *p = sbrkeager(0);
   while ((uint64)p < MAXVA-(1<<30)) {
     p = sbrklazy(1<<30);
     if (p < 0) {
@@ -2721,21 +2721,21 @@ lazy_sbrk(char *s)
     exit(1);
   }
 
-  p = sbrk(PGSIZE);
+  p = sbrkeager(PGSIZE);
   if (p < 0 || (uint64)p != TRAPFRAME-PGSIZE) {
-    printf("sbrk(%d) returned %p, not expected TRAPFRAME-PGSIZE\n", PGSIZE, p);
+    printf("sbrkeager(%d) returned %p, not expected TRAPFRAME-PGSIZE\n", PGSIZE, p);
     exit(1);
   }
 
   p[0] = 1;
   if (p[1] != 0) {
-    printf("sbrk() returned non-zero-filled memory\n");
+    printf("sbrkeager() returned non-zero-filled memory\n");
     exit(1);
   }
 
-  p = sbrk(1);
+  p = sbrkeager(1);
   if ((uint64)p != -1) {
-    printf("sbrk(1) returned %p, expected error\n", p);
+    printf("sbrkeager(1) returned %p, expected error\n", p);
     exit(1);
   }
 
@@ -2969,7 +2969,7 @@ execout(char *s)
     } else if(pid == 0){
       // allocate all of memory.
       while(1){
-        char *a = sbrk(PGSIZE);
+        char *a = sbrkeager(PGSIZE);
         if(a == SBRK_ERROR)
           break;
         *(a + PGSIZE - 1) = 1;
@@ -2978,7 +2978,7 @@ execout(char *s)
       // free a few pages, in order to let exec() make some
       // progress.
       for(int i = 0; i < avail; i++)
-        sbrk(-PGSIZE);
+        sbrkeager(-PGSIZE);
       
       close(1);
       char *args[] = { "echo", "x", 0 };
@@ -3162,20 +3162,20 @@ runtests(struct test *tests, char *justone, int continuous) {
 }
 
 
-// use sbrk() to count how many free physical memory pages there are.
+// use sbrkeager() to count how many free physical memory pages there are.
 int
 countfree()
 {
   int n = 0;
-  uint64 sz0 = (uint64)sbrk(0);
+  uint64 sz0 = (uint64)sbrkeager(0);
   while(1){
-    char *a = sbrk(PGSIZE);
+    char *a = sbrkeager(PGSIZE);
     if(a == SBRK_ERROR){
       break;
     }
     n += 1;
   }
-  sbrk(-((uint64)sbrk(0) - sz0));  
+  sbrkeager(-((uint64)sbrkeager(0) - sz0));  
   return n;
 }
 

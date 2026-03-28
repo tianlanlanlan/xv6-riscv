@@ -21,7 +21,7 @@ int mkdir(const char*);
 int chdir(const char*);
 int dup(int);
 int getpid(void);
-char* sys_sbrk(int,int);
+char* sbrk(int,int);
 int pause(int);
 int uptime(void);
 
@@ -37,7 +37,7 @@ void* memset(void*, int, uint);
 int atoi(const char*);
 int memcmp(const void *, const void *, uint);
 void *memcpy(void *, const void *, uint);
-char* sbrk(int);
+char* sbrkeager(int);
 char* sbrklazy(int);
 
 // printf.c
