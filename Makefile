@@ -185,6 +185,14 @@ qemu-gdb: $K/kernel .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
+.gdbinit-vscode: .gdbinit.tmpl-riscv
+	sed "s/:1234/:$(GDBPORT)/" < $^ > .gdbinit
+	sed -i -e '/^target remote/d' .gdbinit
+
+qemu-gdb-vscode: $K/kernel .gdbinit-vscode fs.img
+	@echo "*** Now run 'gdb' in another window." 1>&2
+	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+
 print-gdbport:
 	@echo $(GDBPORT)
 
