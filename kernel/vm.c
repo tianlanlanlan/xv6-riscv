@@ -108,7 +108,7 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
       if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
         return 0;
       memset(pagetable, 0, PGSIZE);
-      *pte = PA2PTE(pagetable) | PTE_V;
+      *pte = PA2PTE(pagetable, PTE_V);
     }
   }
   return &pagetable[PX(0, va)];
@@ -164,7 +164,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
       return -1;
     if(*pte & PTE_V)
       panic("mappages: remap");
-    *pte = PA2PTE(pa) | perm | PTE_V;
+    *pte = PA2PTE(pa, perm | PTE_V);
     if(a == last)
       break;
     a += PGSIZE;
@@ -407,7 +407,7 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 // until a '\0', or max.
 // Return 0 on success, -1 on error.
 int
-copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
+copyinstr(pagetable_t pagetable, char *dstpa, uint64 srcva, uint64 max)
 {
   uint64 n, va0, pa0;
   int got_null = 0;
@@ -421,19 +421,19 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     if(n > max)
       n = max;
 
-    char *p = (char *) (pa0 + (srcva - va0));
+    char *srcpa = (char *) (pa0 + (srcva - va0));
     while(n > 0){
-      if(*p == '\0'){
-        *dst = '\0';
+      if(*srcpa == '\0'){
+        *dstpa = '\0';
         got_null = 1;
         break;
       } else {
-        *dst = *p;
+        *dstpa = *srcpa;
       }
       --n;
       --max;
-      p++;
-      dst++;
+      srcpa++;
+      dstpa++;
     }
 
     srcva = va0 + PGSIZE;
